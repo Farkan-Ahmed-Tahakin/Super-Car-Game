@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Car Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #2c3e50;
+            touch-action: manipulation;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: #34495e;
+            overflow: hidden;
+        }
+        
+        #playerCar {
+            position: absolute;
+            width: 15vw;
+            height: 25vw;
+            background: #e74c3c;
+            bottom: 5vh;
+            left: 42.5vw;
+            border-radius: 1.5vw;
+            transition: left 0.1s;
+        }
+        
+        .road-line {
+            position: absolute;
+            width: 3vw;
+            height: 10vh;
+            background: #fff;
+            left: 48.5vw;
+        }
+        
+        .obstacle {
+            position: absolute;
+            width: 15vw;
+            height: 15vw;
+            background: #2ecc71;
+            border-radius: 2vw;
+        }
+        
+        #score {
+            position: fixed;
+            top: 3vh;
+            left: 3vw;
+            color: white;
+            font-family: Arial;
+            font-size: 5vw;
+            z-index: 100;
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 4vh;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5vw;
+            box-sizing: border-box;
+        }
+        
+        .control-btn {
+            width: 20vw;
+            height: 20vw;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10vw;
+            color: white;
+            user-select: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="score">0</div>
+    <div id="gameContainer">
+        <div id="playerCar"></div>
+    </div>
+    <div class="controls">
+        <div class="control-btn" id="leftBtn">←</div>
+        <div class="control-btn" id="rightBtn">→</div>
+    </div>
+
+    <script>
+        const playerCar = document.getElementById('playerCar');
+        const gameContainer = document.getElementById('gameContainer');
+        const scoreElement = document.getElementById('score');
+        let playerX = 42.5;
+        let score = 0;
+        let gameActive = true;
+        let obstacles = [];
+        let touchStartX = 0;
+
+        // Touch controls
+        document.getElementById('leftBtn').addEventListener('touchstart', moveLeft);
+        document.getElementById('rightBtn').addEventListener('touchstart', moveRight);
+        document.addEventListener('touchstart', handleTouchStart);
+        document.addEventListener('touchmove', handleTouchMove);
+
+        // Swipe controls
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+        }
+
+        function handleTouchMove(e) {
+            if(!gameActive) return;
+            const touchX = e.touches[0].clientX;
+            const diff = touchX - touchStartX;
+            const moveAmount = diff * 0.5;
+            
+            playerX = Math.max(5, Math.min(80 - 15, playerX + (moveAmount / window.innerWidth * 100)));
+            playerCar.style.left = playerX + 'vw';
+            touchStartX = touchX;
+            e.preventDefault();
+        }
+
+        function moveLeft() {
+            if(gameActive) {
+                playerX = Math.max(5, playerX - 15);
+                playerCar.style.left = playerX + 'vw';
+            }
+        }
+
+        function moveRight() {
+            if(gameActive) {
+                playerX = Math.min(80 - 15, playerX + 15);
+                playerCar.style.left = playerX + 'vw';
+            }
+        }
+
+        // Game elements
+        function createRoadLines() {
+            setInterval(() => {
+                const line = document.createElement('div');
+                line.className = 'road-line';
+                line.style.top = '-10vh';
+                gameContainer.appendChild(line);
+                
+                let pos = -10;
+                const animate = () => {
+                    if(!gameActive) return;
+                    pos += 2;
+                    line.style.top = pos + 'vh';
+                    if(pos > 100) line.remove();
+                    else requestAnimationFrame(animate);
+                };
+                animate();
+            }, 1500);
+        }
+
+        function createObstacle() {
+            if(!gameActive) return;
+            
+            const obstacle = document.createElement('div');
+            obstacle.className = 'obstacle';
+            obstacle.style.left = Math.random() * 75 + 'vw';
+            obstacle.style.top = '-15vw';
+            gameContainer.appendChild(obstacle);
+            
+            let pos = -15;
+            const animate = () => {
+                if(!gameActive) return;
+                pos += 3;
+                obstacle.style.top = pos + 'vw';
+
+                // Collision detection
+                if(pos + 15 > 80 && pos < 95) {
+                    const obstacleX = parseFloat(obstacle.style.left);
+                    if(Math.abs(obstacleX - playerX) < 15) {
+                        gameOver();
+                    }
+                }
+
+                if(pos > 100) {
+                    obstacle.remove();
+                    score += 10;
+                    scoreElement.textContent = score;
+                } else {
+                    requestAnimationFrame(animate);
+                }
+            };
+            animate();
+        }
+
+        function gameOver() {
+            gameActive = false;
+            const gameOver = document.createElement('div');
+            gameOver.style.position = 'absolute';
+            gameOver.style.color = 'white';
+            gameOver.style.fontSize = '8vw';
+            gameOver.style.width = '100%';
+            gameOver.style.textAlign = 'center';
+            gameOver.style.top = '45vh';
+            gameOver.textContent = 'GAME OVER!';
+            gameContainer.appendChild(gameOver);
+        }
+
+        // Start game
+        createRoadLines();
+        setInterval(createObstacle, 1500);
+    </script>
+</body>
+</html>
